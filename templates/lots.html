@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "_macros.html" import lot_card %}
+{% block title %}Find parking{% endblock %}
+{% block content %}
+<h1>Find parking</h1>
+<form class="filters" method="get">
+  <label>Area or lot name
+    <input name="q" value="{{ q }}" list="areas" placeholder="e.g. Tech Park">
+    <datalist id="areas">{% for a in areas %}<option value="{{ a }}">{% endfor %}</datalist>
+  </label>
+  <label>Vehicle with a free bay
+    <select name="kind">
+      <option value="">Any</option>
+      {% for k in ['CAR','BIKE','EV'] %}<option value="{{ k }}" {{ 'selected' if kind == k }}>{{ k.title() if k != 'EV' else 'EV' }}</option>{% endfor %}
+    </select>
+  </label>
+  <button class="btn dark" type="submit">Search</button>
+</form>
+<div class="lot-list">
+  {% for lot, s in rows %}{{ lot_card(lot, s) }}
+  {% else %}<div class="panel">No lot matches that search. Clear the area or pick another vehicle type.</div>{% endfor %}
+</div>
+{% endblock %}

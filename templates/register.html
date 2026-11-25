@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<div class="authbox panel">
+  <h1>Create an account</h1>
+  <form class="stack" method="post">
+    <label>Username<input name="username" value="{{ form.get('username','') }}" autocomplete="username" required minlength="3"></label>
+    <label>Email<input name="email" type="email" value="{{ form.get('email','') }}" autocomplete="email" required></label>
+    <div class="row">
+      <label>Password<input name="password" type="password" autocomplete="new-password" required minlength="6"></label>
+      <label>Confirm password<input name="confirm" type="password" autocomplete="new-password" required></label>
+    </div>
+    <label>Admin code <span class="hint">Leave empty to register as a normal user.</span><input name="admin_code" autocomplete="off"></label>
+    <button class="btn" type="submit">Register</button>
+  </form>
+  <p class="muted">Already registered? <a href="{{ url_for('login') }}">Log in</a>.</p>
+</div>
+{% endblock %}

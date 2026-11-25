@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Admin{% endblock %}
+{% block content %}
+<h1>Admin</h1>
+<div class="kpis">
+  <div class="panel kpi"><b>Rs {{ '%.2f' % rep.totals.fee }}</b>revenue collected</div>
+  <div class="panel kpi"><b>{{ rep.totals.n }}</b>completed visits</div>
+  <div class="panel kpi"><b>{{ rep.totals.mins|round|int }} min</b>average stay</div>
+  <div class="panel kpi"><b>{{ users }}</b>registered users</div>
+</div>
+
+<form class="filters" method="get">
+  <label>Manage lot
+    <select name="lot" onchange="this.form.submit()">
+      {% for l, s in lots %}<option value="{{ l.lot_id }}" {{ 'selected' if l.lot_id == lot.lot_id }}>{{ l.name }} ({{ s.free }} free)</option>{% endfor %}
+    </select>
+  </label>
+  <noscript><button class="btn dark">Open</button></noscript>
+</form>
+
+{% set s = st.summary %}
+<div class="stats">
+  <div class="stat"><b>{{ s.free }}</b>free</div><div class="stat"><b>{{ s.reserved }}</b>reserved</div>
+  <div class="stat"><b>{{ s.occupied }}</b>occupied</div><div class="stat"><b>{{ s.unavailable }}</b>out of service</div>
+  <div class="stat"><b>{{ (s.ema * 100)|round|int }}%</b>demand (EMA)</div>
+  <div class="stat"><b>&times;{{ s.multiplier }}</b>price rate</div>
+</div>
+
+<section class="section">
+  <h2>Plates waiting for review</h2>
+  {% if reviews %}
+  <div class="scroll"><table>
+    <thead><tr><th>Plate</th><th>Vehicle</th><th>Camera confidence</th><th></th></tr></thead>
+    <tbody>{% for r in reviews %}<tr><td class="mono">{{ r.plate }}</td><td>{{ r.kind }}</td><td>{{ '%.2f' % r.confidence }}</td>
+      <td><button class="btn small" onclick="act('/api/admin/lot/{{ lot.lot_id }}/review/{{ r.id }}','approve')">Approve and admit</button>
+          <button class="btn small danger" onclick="act('/api/admin/lot/{{ lot.lot_id }}/review/{{ r.id }}','reject')">Reject</button></td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="panel muted">No plates waiting. Low-confidence scans at the entry gate will appear here.</div>{% endif %}
+</section>
+
+<section class="section">
+  <h2>Slots</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Slot</th><th>Type</th><th>State</th><th>Plate</th><th>Actions</th></tr></thead>
+    <tbody>{% for sl in st.slots %}
+      <tr><td><b>{{ sl.id }}</b></td><td>{{ sl.kind }}</td>
+          <td><span class="s-{{ sl.state }}">{{ sl.state.replace('_',' ').title() }}</span>{% if sl.flagged %} <span class="s-OCCUPIED">(sensor: unticketed vehicle)</span>{% endif %}</td>
+          <td class="mono">{{ sl.plate or '' }}</td>
+          <td>
+            {% if sl.state == 'OUT_OF_SERVICE' %}<button class="btn small" onclick="act('/api/admin/lot/{{ lot.lot_id }}/slot/{{ sl.id }}','restore')">Restore</button>
+            {% elif sl.state != 'OCCUPIED' %}<button class="btn small danger" onclick="act('/api/admin/lot/{{ lot.lot_id }}/slot/{{ sl.id }}','fault')">Mark faulty</button>{% endif %}
+            {% if sl.flagged %}<button class="btn small" onclick="act('/api/admin/lot/{{ lot.lot_id }}/slot/{{ sl.id }}','clear')">Clear sensor alert</button>
+            {% elif sl.state == 'FREE' %}<button class="btn small ghost" onclick="act('/api/admin/lot/{{ lot.lot_id }}/slot/{{ sl.id }}','flag')">Simulate stray vehicle</button>{% endif %}
+          </td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+
+<section class="section grid2">
+  <div class="panel">
+    <h2>Pricing</h2>
+    <form class="stack" id="form-pricing">
+      <div class="row">
+        <label>Car (Rs/h)<input name="CAR" type="number" min="1" step="0.5" value="{{ '%g' % lot.rates.CAR }}"></label>
+        <label>Bike (Rs/h)<input name="BIKE" type="number" min="1" step="0.5" value="{{ '%g' % lot.rates.BIKE }}"></label>
+      </div>
+      <div class="row">
+        <label>EV (Rs/h)<input name="EV" type="number" min="1" step="0.5" value="{{ '%g' % lot.rates.EV }}"></label>
+        <label>Free minutes<input name="grace" type="number" min="0" step="1" value="{{ '%g' % lot.grace }}"></label>
+      </div>
+      <label>Demand multiplier
+        <select name="override">
+          <option value="auto" {{ 'selected' if s.auto }}>Automatic (moving average)</option>
+          {% for m in [1.0, 1.25, 1.5, 2.0] %}<option value="{{ m }}" {{ 'selected' if not s.auto and s.multiplier == m }}>Fixed &times;{{ m }}</option>{% endfor %}
+        </select>
+      </label>
+      <button class="btn" type="submit">Save pricing</button>
+    </form>
+  </div>
+  <div class="panel">
+    <h2>Reports</h2>
+    {% macro bars(title, rows, money) %}
+      <h3>{{ title }}</h3>
+      {% set mx = (rows|map(attribute='v')|list|max) if rows else 0 %}
+      {% for r in rows %}<div class="hb"><span>{{ r.k }}</span><div class="bar"><span style="width: {{ (r.v / mx * 100)|round|int if mx else 0 }}%"></span></div><b>{{ 'Rs %.2f' % r.v if money else r.v }}</b></div>
+      {% else %}<p class="muted">No data yet. Reports fill in as visitors pay and exit.</p>{% endfor %}
+    {% endmacro %}
+    {{ bars('Revenue by day (last 7)', rep.by_day, true) }}
+    {{ bars('Revenue by lot', rep.by_lot, true) }}
+    {{ bars('Visits by payment method', rep.by_method, false) }}
+    {{ bars('Visits by vehicle type', rep.by_kind, false) }}
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+async function act(url, action) {
+  const r = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({action})});
+  const j = await r.json();
+  if (!j.ok) { alert(j.error); return; }
+  location.reload();
+}
+document.getElementById('form-pricing').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = Object.fromEntries(new FormData(e.target).entries());
+  const r = await fetch('/api/admin/lot/{{ lot.lot_id }}/pricing', {method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({rates: {CAR: f.CAR, BIKE: f.BIKE, EV: f.EV}, grace: f.grace, override: f.override})});
+  const j = await r.json();
+  if (!j.ok) { alert(j.error); return; }
+  location.reload();
+});
+</script>
+{% endblock %}

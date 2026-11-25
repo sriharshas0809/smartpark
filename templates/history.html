@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}My parking{% endblock %}
+{% block content %}
+<h1>My parking history</h1>
+<div class="kpis">
+  <div class="panel kpi"><b>{{ tot.n }}</b>visits</div>
+  <div class="panel kpi"><b>Rs {{ '%.2f' % tot.fee }}</b>paid in total</div>
+  <div class="panel kpi"><b>{{ (tot.mins / 60)|round(1) }} h</b>parked in total</div>
+</div>
+{% if rows %}
+<div class="scroll"><table>
+  <thead><tr><th>Exit</th><th>Lot</th><th>Plate</th><th>Slot</th><th>Stayed</th><th>Rate</th><th>Fee</th><th>Paid by</th></tr></thead>
+  <tbody>{% for r in rows %}
+    <tr><td>{{ r.exit_time }}</td><td>{{ r.lot_name }}</td><td class="mono">{{ r.plate }}</td><td>{{ r.slot_id }} ({{ r.kind }})</td>
+        <td>{{ r.minutes|round|int }} min</td><td>&times;{{ r.multiplier }}</td><td>Rs {{ '%.2f' % r.fee }}</td><td>{{ r.method }}</td></tr>
+  {% endfor %}</tbody>
+</table></div>
+{% else %}
+<div class="panel">No completed visits yet. <a href="{{ url_for('lots') }}">Find a lot</a>, drive in, and your visit will appear here after you pay.</div>
+{% endif %}
+{% endblock %}

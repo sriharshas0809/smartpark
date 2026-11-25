@@ -1,0 +1,14 @@
+{% macro lot_card(lot, s) %}
+<article class="panel lot-card">
+  <div>
+    <h2>{{ lot.name }}</h2>
+    <div class="muted">{{ lot.area }} &middot; Car Rs {{ '%g' % lot.rates.CAR }}/h, Bike Rs {{ '%g' % lot.rates.BIKE }}/h, EV Rs {{ '%g' % lot.rates.EV }}/h</div>
+    <div class="pills">
+      {% for k, v in s.kinds.items() %}<span class="pill {{ 'zero' if v.free == 0 }}">{{ k.title() if k != 'EV' else 'EV' }}: {{ v.free }} free of {{ v.total }}</span>{% endfor %}
+    </div>
+    <span class="tag {{ s.level }}">{{ s.level }} demand &times;{{ s.multiplier }}</span>
+    <div class="bar" title="Occupancy"><span style="width: {{ (s.occupancy * 100)|round|int }}%"></span></div>
+  </div>
+  <div><a class="btn" href="{{ url_for('lot_page', lid=lot.lot_id) }}">Open lot</a></div>
+</article>
+{% endmacro %}

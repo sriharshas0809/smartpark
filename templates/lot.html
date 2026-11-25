@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}{{ lot.name }}{% endblock %}
+{% block content %}
+<div class="lot-head">
+  <div>
+    <h1>{{ lot.name }}</h1>
+    <div class="muted">{{ lot.area }} &middot; Car Rs {{ '%g' % lot.rates.CAR }}/h, Bike Rs {{ '%g' % lot.rates.BIKE }}/h, EV Rs {{ '%g' % lot.rates.EV }}/h &middot; first {{ '%g' % lot.grace }} min free</div>
+  </div>
+  <div id="level"></div>
+</div>
+
+<div class="lot-layout">
+  <section>
+    <div class="stats" id="stats"></div>
+    <div class="bay-board">
+      <div id="grid" class="grid" aria-label="Lot map"></div>
+      <div class="legend">
+        <span class="f">Free</span><span class="r">Reserved</span><span class="o">Occupied</span>
+        <span class="x">Out of service</span><span class="p">Route</span>
+      </div>
+    </div>
+    <p class="muted">Select any bay to see the route from the gate. Bays update every few seconds.</p>
+    <div class="panel" id="route-card" hidden>
+      <h3 id="route-title">Route</h3>
+      <ol class="steps" id="route-steps"></ol>
+    </div>
+  </section>
+
+  <aside>
+  {% if user %}
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-tab="reserve">Reserve</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="entry">Entry gate</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="exit">Exit and pay</button>
+    </div>
+    <div class="panel">
+      <div class="tabpanel" id="tab-reserve">
+        <form class="stack" id="form-reserve">
+          <label>Number plate<input name="plate" placeholder="KA01AB1234" required maxlength="14" autocomplete="off"></label>
+          <label>Vehicle type
+            <select name="kind"><option value="CAR">Car</option><option value="BIKE">Bike</option><option value="EV">EV</option></select>
+          </label>
+          <button class="btn" type="submit">Reserve nearest bay</button>
+          <span class="hint">The bay is held for {{ lot.hold_minutes }} minutes.</span>
+        </form>
+        <div id="out-reserve"></div>
+      </div>
+      <div class="tabpanel" id="tab-entry" hidden>
+        <form class="stack" id="form-entry">
+          <label>Number plate<input name="plate" placeholder="KA01AB1234" required maxlength="14" autocomplete="off"></label>
+          <label>Vehicle type
+            <select name="kind"><option value="CAR">Car</option><option value="BIKE">Bike</option><option value="EV">EV</option></select>
+          </label>
+          <label>Camera noise <span class="hint">Simulates a dirty or blurred plate. Above 0.40 the plate goes to an attendant.</span>
+            <input type="range" name="noise" min="0" max="0.8" step="0.05" value="0"><output id="noise-out">0.00</output>
+          </label>
+          <button class="btn" type="submit">Scan plate and issue ticket</button>
+        </form>
+        <div id="out-entry"></div>
+      </div>
+      <div class="tabpanel" id="tab-exit" hidden>
+        <form class="stack" id="form-exit">
+          <label>Ticket number<input name="ticket" placeholder="T0001" required autocomplete="off"></label>
+          <label>Minutes stayed <span class="hint">Optional. Leave empty to use the real time since entry.</span><input name="minutes" type="number" min="0" step="1"></label>
+          <div id="quote-box"></div>
+          <div class="row">
+            <label>Payment method
+              <select name="method">{% for m in PAYMENT_METHODS %}<option>{{ m }}</option>{% endfor %}</select>
+            </label>
+            <label>Amount paid (Rs)<input name="paid" type="number" min="0" step="0.01" required></label>
+          </div>
+          <div class="row">
+            <button class="btn ghost" type="button" id="btn-quote">Show fee</button>
+            <button class="btn" type="submit">Pay and open gate</button>
+          </div>
+        </form>
+        <div id="out-exit"></div>
+      </div>
+    </div>
+    <div class="panel section" id="mine-box" hidden>
+      <h3>My bays</h3><div id="mine"></div>
+    </div>
+  {% else %}
+    <div class="panel">
+      <h2>Log in to park here</h2>
+      <p class="muted">You can watch availability without an account. To reserve a bay, enter the lot or pay, log in or register.</p>
+      <a class="btn" href="{{ url_for('login', next=request.path) }}">Log in</a>
+      <a class="btn ghost" href="{{ url_for('register') }}">Register</a>
+    </div>
+  {% endif %}
+  </aside>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>window.LOT = {id: {{ lot.lot_id }}, auth: {{ 'true' if user else 'false' }}};</script>
+<script src="{{ url_for('static', filename='lot.js') }}"></script>
+{% endblock %}

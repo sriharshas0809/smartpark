@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<section class="hero">
+  <div>
+    <h1>Find a bay before you reach the gate.</h1>
+    <p>SmartPark reads your number plate at the entry, sends you to the nearest free bay of the right type,
+       and charges a fee that follows demand. Reserve ahead, follow the route, pay and leave.</p>
+    <p><a class="btn" href="{{ url_for('lots') }}">Find parking</a>
+       {% if not user %}<a class="btn ghost" href="{{ url_for('register') }}">Create an account</a>{% endif %}</p>
+  </div>
+  <div class="board" aria-label="Live availability">
+    {% for lot, s in lots %}
+    <a class="board-row" href="{{ url_for('lot_page', lid=lot.lot_id) }}">
+      <span><b>{{ lot.name }}</b><small>{{ lot.area }} &middot; {{ s.level }} demand &times;{{ s.multiplier }}</small></span>
+      <span class="led {{ 'zero' if s.free == 0 }}" title="Free bays">{{ s.free }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+<section class="how">
+  <div class="panel"><h3>Reserve</h3><p class="muted">Pick a lot, enter your plate and vehicle type. The nearest suitable bay is held for you for 15 minutes.</p></div>
+  <div class="panel"><h3>Drive in</h3><p class="muted">The camera reads your plate. If it is unclear, an attendant checks it. Follow the route shown on the lot map.</p></div>
+  <div class="panel"><h3>Pay and leave</h3><p class="muted">Pay by UPI, UPI Lite, Net Banking, Wallet or EMI. The first 10 minutes are free.</p></div>
+</section>
+{% endblock %}

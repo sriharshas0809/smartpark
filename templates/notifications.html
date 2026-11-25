@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Alerts{% endblock %}
+{% block content %}
+<h1>Alerts</h1>
+{% if rows %}
+<div class="scroll"><table>
+  <thead><tr><th>When</th><th>Message</th></tr></thead>
+  <tbody>{% for r in rows %}<tr><td style="white-space:nowrap">{{ r.created }}</td><td>{{ r.message }}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% else %}<div class="panel">No alerts yet. You will see slot confirmations and reservation reminders here.</div>{% endif %}
+{% endblock %}
