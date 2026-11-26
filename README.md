@@ -15,6 +15,32 @@ Sample admin login: `admin` / `admin123` (change it with the env var `SMARTPARK_
 before the first run). To register another admin, enter the admin code `ADMIN2026` on the register page
 (`SMARTPARK_ADMIN_CODE` changes it). Anyone else registers as a normal user.
 
+## Deploy online
+
+This is a Python (Flask) server, so it needs a host that runs Python. **Netlify only serves static
+files and JavaScript functions, which is why the Netlify URL shows "Page not found".**
+
+### Render (free, recommended)
+
+1. Push this repo to GitHub (already done: `sriharshas0809/smartpark`).
+2. Go to https://dashboard.render.com, then **New > Blueprint**, and pick this repo.
+   Render reads `render.yaml` and creates the web service.
+3. When asked, set `SMARTPARK_ADMIN_PASSWORD` (the admin login password) and optionally
+   `SMARTPARK_ADMIN_CODE`. `SMARTPARK_SECRET` is generated for you.
+4. Wait for the build, then open the `https://smartpark-xxxx.onrender.com` URL Render gives you.
+
+Notes: the free plan sleeps after ~15 minutes idle (the first visit takes ~30 s to wake up), and its
+disk is temporary, so `smartpark.db` (users, history) resets on each redeploy or restart.
+
+### Other hosts
+
+- **Railway / Heroku-style hosts** use the `Procfile`.
+- **PythonAnywhere**: upload the files, create a Flask web app pointing the WSGI file at
+  `from app import app as application`, and run `pip install -r requirements.txt`. Its disk is
+  persistent, so the SQLite database survives restarts.
+
+Always run a single worker process (as the configs do): lot state is held in memory.
+
 ## Requirement map
 
 | Req | Where it lives |
