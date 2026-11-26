@@ -1,0 +1,19 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: smartpark
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    # One worker only: lot state (slots, tickets, reservations) lives in memory
+    # and must be shared by every request.
+    startCommand: gunicorn --workers 1 --threads 4 --bind 0.0.0.0:$PORT app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: SMARTPARK_SECRET
+        generateValue: true
+      - key: SMARTPARK_ADMIN_PASSWORD
+        sync: false
+      - key: SMARTPARK_ADMIN_CODE
+        sync: false
